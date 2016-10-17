@@ -118,6 +118,7 @@ func (cwl *CloudWatchLogger) resetBatch() {
 }
 
 func (cwl *CloudWatchLogger) sendToCloudWatchLogs(batch logBatch) error {
+	s := time.Now()
 	params := &cloudwatchlogs.PutLogEventsInput{
 		LogEvents:     batch,
 		LogGroupName:  aws.String(cwl.logGroupName),
@@ -137,6 +138,7 @@ func (cwl *CloudWatchLogger) sendToCloudWatchLogs(batch logBatch) error {
 		}
 		return fmt.Errorf("PutLogEvents failed: %s", err)
 	}
+	log.Printf("wrote %d log events (%d bytes) in %s\n", len(cwl.batch), cwl.batchByteSize, time.Since(s))
 
 	cwl.sequenceToken = resp.NextSequenceToken
 	return nil
