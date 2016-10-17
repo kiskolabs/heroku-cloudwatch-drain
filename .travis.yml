@@ -2,3 +2,8 @@ language: go
 
 go:
   - tip
+
+script: govendor test +local
+
+notifications:
+  email: false

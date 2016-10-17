@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/honeybadger-io/honeybadger-go"
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logger"
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logparser"
 )
@@ -25,7 +26,7 @@ type App struct {
 }
 
 func main() {
-	var bind, user, pass string
+	var bind, user, pass, honeybadgerKey string
 	var retention int
 	var stripAnsiCodes bool
 
@@ -33,6 +34,7 @@ func main() {
 	flag.IntVar(&retention, "retention", 0, "log retention in days for new log groups")
 	flag.StringVar(&user, "user", "", "username for HTTP basic auth")
 	flag.StringVar(&pass, "pass", "", "password for HTTP basic auth")
+	flag.StringVar(&honeybadgerKey, "honeybadger-key", "", "Honeybadger API key")
 	flag.BoolVar(&stripAnsiCodes, "strip-ansi-codes", false, "strip ANSI codes from log messages")
 	flag.Parse()
 
@@ -43,6 +45,11 @@ func main() {
 		stripAnsiCodes: stripAnsiCodes,
 		parse:          logparser.Parse,
 		loggers:        make(map[string]logger.Logger),
+	}
+
+	if honeybadgerKey != "" {
+		honeybadger.Configure(honeybadger.Configuration{APIKey: honeybadgerKey})
+		defer honeybadger.Monitor()
 	}
 
 	http.Handle("/", app)

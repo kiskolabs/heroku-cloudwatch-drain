@@ -160,6 +160,12 @@
 			"revisionTime": "2016-08-24T23:07:50Z"
 		},
 		{
+			"checksumSHA1": "uh5QrXYExw+UnQJ8D+uce91/KaI=",
+			"path": "github.com/honeybadger-io/honeybadger-go",
+			"revision": "2f2b6d7b0ced7a3e05982a96c0037275cac69a38",
+			"revisionTime": "2016-10-14T15:19:40Z"
+		},
+		{
 			"checksumSHA1": "0ZrwvB6KoGPj2PoDNSEJwxQ6Mog=",
 			"origin": "github.com/aws/aws-sdk-go/vendor/github.com/jmespath/go-jmespath",
 			"path": "github.com/jmespath/go-jmespath",
@@ -167,10 +173,34 @@
 			"revisionTime": "2016-08-24T23:07:50Z"
 		},
 		{
+			"checksumSHA1": "mhvIMH8oAtOiEyg37zWKmgb+6v4=",
+			"path": "github.com/pborman/uuid",
+			"revision": "3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b",
+			"revisionTime": "2016-10-05T15:16:09Z"
+		},
+		{
 			"checksumSHA1": "TvF3ym5sZVNqGlUOS9HgOIl/sZM=",
 			"path": "github.com/satori/go.uuid",
 			"revision": "d41af8bb6a7704f00bc3b7cba9355ae6a5a80048",
 			"revisionTime": "2015-10-28T23:17:19Z"
+		},
+		{
+			"checksumSHA1": "UnT7JW8ZDcUVJUYOPBfW6SToB0k=",
+			"path": "github.com/shirou/gopsutil/internal/common",
+			"revision": "c2dd8ca3d4d77d2516214e7d99b703d5ba82c1da",
+			"revisionTime": "2016-10-15T12:41:39Z"
+		},
+		{
+			"checksumSHA1": "4I3yYYZEctqf3foI2+CI92lu5pM=",
+			"path": "github.com/shirou/gopsutil/load",
+			"revision": "c2dd8ca3d4d77d2516214e7d99b703d5ba82c1da",
+			"revisionTime": "2016-10-15T12:41:39Z"
+		},
+		{
+			"checksumSHA1": "5HYtuEgPkRvE6I8VFQMAN0rbYRU=",
+			"path": "github.com/shirou/gopsutil/mem",
+			"revision": "c2dd8ca3d4d77d2516214e7d99b703d5ba82c1da",
+			"revisionTime": "2016-10-15T12:41:39Z"
 		},
 		{
 			"checksumSHA1": "txEvr++fI/RaGAxnZDFNItxtGPo=",
