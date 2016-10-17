@@ -26,7 +26,7 @@ type App struct {
 }
 
 func main() {
-	var bind, user, pass, honeybadgerKey string
+	var bind, user, pass string
 	var retention int
 	var stripAnsiCodes bool
 
@@ -34,7 +34,6 @@ func main() {
 	flag.IntVar(&retention, "retention", 0, "log retention in days for new log groups")
 	flag.StringVar(&user, "user", "", "username for HTTP basic auth")
 	flag.StringVar(&pass, "pass", "", "password for HTTP basic auth")
-	flag.StringVar(&honeybadgerKey, "honeybadger-key", "", "Honeybadger API key")
 	flag.BoolVar(&stripAnsiCodes, "strip-ansi-codes", false, "strip ANSI codes from log messages")
 	flag.Parse()
 
@@ -47,12 +46,12 @@ func main() {
 		loggers:        make(map[string]logger.Logger),
 	}
 
-	if honeybadgerKey != "" {
-		honeybadger.Configure(honeybadger.Configuration{APIKey: honeybadgerKey})
-		defer honeybadger.Monitor()
+	if honeybadger.Config.APIKey == "" {
+		http.Handle("/", honeybadger.Handler(app))
+	} else {
+		http.Handle("/", app)
 	}
 
-	http.Handle("/", app)
 	if err := http.ListenAndServe(bind, nil); err != nil {
 		log.Println(err)
 	}
@@ -87,6 +86,9 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if err = app.processMessages(r.Body, l); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		if honeybadger.Config.APIKey == "" {
+			honeybadger.Notify(err)
+		}
 		log.Println(err)
 		return
 	}
