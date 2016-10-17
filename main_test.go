@@ -14,11 +14,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var l = new(LastMessageLogger)
+var parseFunc = func(b []byte) (*logparser.LogEntry, error) {
+	return &logparser.LogEntry{Time: time.Now(), Message: ""}, nil
+}
+
 var app = &App{
-	loggers: map[string]logger.Logger{"app": new(DiscardLogger)},
-	parse: func(b []byte) (*logparser.LogEntry, error) {
-		return &logparser.LogEntry{Time: time.Now(), Message: ""}, nil
-	},
+	loggers: map[string]logger.Logger{"app": l},
+	parse:   parseFunc,
 }
 var server = httptest.NewServer(app)
 
@@ -61,12 +64,37 @@ func TestNoBasicAuth(t *testing.T) {
 }
 
 func TestSingleLogEntry(t *testing.T) {
+	app.parse = logparser.Parse
+	defer func() {
+		app.parse = parseFunc
+	}()
+
 	body := bytes.NewBuffer([]byte(`89 <45>1 2016-10-15T08:59:08.723822+00:00 host heroku web.1 - State changed from up to down`))
 	r, err := http.Post(server.URL+"/app", "", body)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusAccepted, r.StatusCode)
+	assert.Equal(t, "heroku[web.1]: State changed from up to down", l.m)
 }
 
-type DiscardLogger struct{}
+func TestAnsiCodeStripping(t *testing.T) {
+	app.parse = logparser.Parse
+	app.stripAnsiCodes = true
+	defer func() {
+		app.parse = parseFunc
+		app.stripAnsiCodes = false
+	}()
 
-func (l *DiscardLogger) Log(t time.Time, s string) {}
+	body := bytes.NewBuffer([]byte(`89 <45>1 2016-10-15T08:59:08.723822+00:00 host heroku web.1 - [1m[36m(0.1ms)[0m [1mBEGIN[0m`))
+	r, err := http.Post(server.URL+"/app", "", body)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusAccepted, r.StatusCode)
+	assert.Equal(t, "heroku[web.1]: (0.1ms) BEGIN", l.m)
+}
+
+type LastMessageLogger struct {
+	m string
+}
+
+func (l *LastMessageLogger) Log(t time.Time, s string) {
+	l.m = s
+}
