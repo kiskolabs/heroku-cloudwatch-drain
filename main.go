@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"sync"
 
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logger"
@@ -14,9 +15,10 @@ import (
 )
 
 type App struct {
-	retention  int
-	user, pass string
-	parse      logparser.ParseFunc
+	retention      int
+	stripAnsiCodes bool
+	user, pass     string
+	parse          logparser.ParseFunc
 
 	loggers map[string]logger.Logger
 	mu      sync.Mutex // protects loggers
@@ -25,19 +27,22 @@ type App struct {
 func main() {
 	var bind, user, pass string
 	var retention int
+	var stripAnsiCodes bool
 
 	flag.StringVar(&bind, "bind", ":8080", "address to bind to")
 	flag.IntVar(&retention, "retention", 0, "log retention in days for new log groups")
 	flag.StringVar(&user, "user", "", "username for HTTP basic auth")
 	flag.StringVar(&pass, "pass", "", "password for HTTP basic auth")
+	flag.BoolVar(&stripAnsiCodes, "strip-ansi-codes", false, "strip ANSI codes from log messages")
 	flag.Parse()
 
 	app := &App{
-		retention: retention,
-		user:      user,
-		pass:      pass,
-		parse:     logparser.Parse,
-		loggers:   make(map[string]logger.Logger),
+		retention:      retention,
+		user:           user,
+		pass:           pass,
+		stripAnsiCodes: stripAnsiCodes,
+		parse:          logparser.Parse,
+		loggers:        make(map[string]logger.Logger),
 	}
 
 	http.Handle("/", app)
@@ -100,10 +105,20 @@ func (app *App) processMessages(r io.Reader, l logger.Logger) error {
 		if err != nil {
 			return fmt.Errorf("unable to parse message: %s, error: %s", scanner.Text(), err)
 		}
-		l.Log(entry.Time, entry.Message)
+		m := entry.Message
+		if app.stripAnsiCodes {
+			m = stripAnsi(m)
+		}
+		l.Log(entry.Time, m)
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("failed to scan request body: %s", err)
 	}
 	return nil
+}
+
+var ansiRegexp = regexp.MustCompile("\x1b[^m]*m")
+
+func stripAnsi(s string) string {
+	return ansiRegexp.ReplaceAllLiteralString(s, "")
 }
