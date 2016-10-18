@@ -209,5 +209,9 @@
 			"revisionTime": "2015-11-02T02:08:28Z"
 		}
 	],
-	"rootPath": "github.com/kiskolabs/heroku-cloudwatch-drain"
+	"rootPath": "github.com/kiskolabs/heroku-cloudwatch-drain",
+	"heroku": {
+		"install" : [ "." ],
+		"goVersion": "go1.7"
+	}
 }
