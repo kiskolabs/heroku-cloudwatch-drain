@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sync"
 
+	"github.com/honeybadger-io/honeybadger-go"
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logger"
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logparser"
 )
@@ -45,7 +46,12 @@ func main() {
 		loggers:        make(map[string]logger.Logger),
 	}
 
-	http.Handle("/", app)
+	if honeybadger.Config.APIKey == "" {
+		http.Handle("/", honeybadger.Handler(app))
+	} else {
+		http.Handle("/", app)
+	}
+
 	if err := http.ListenAndServe(bind, nil); err != nil {
 		log.Println(err)
 	}
@@ -80,6 +86,9 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if err = app.processMessages(r.Body, l); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		if honeybadger.Config.APIKey == "" {
+			honeybadger.Notify(err)
+		}
 		log.Println(err)
 		return
 	}

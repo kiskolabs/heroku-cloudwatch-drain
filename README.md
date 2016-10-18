@@ -24,6 +24,10 @@ etc., see the [SDK
 Configuration](http://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html)
 page.
 
+## Exception reporting
+
+Set the `HONEYBADGER_API_KEY` environment variable to report panics and errors to Honeybadger.
+
 ## Sending logs
 
 Logs should be sent to this application, with the log group name as the URL

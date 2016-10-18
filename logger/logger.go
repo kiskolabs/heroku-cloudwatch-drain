@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/honeybadger-io/honeybadger-go"
 	"github.com/satori/go.uuid"
 )
 
@@ -107,6 +108,9 @@ func (cwl *CloudWatchLogger) flush() {
 	cwl.resetBatch()
 	sort.Sort(batch)
 	if err := cwl.sendToCloudWatchLogs(batch); err != nil {
+		if honeybadger.Config.APIKey == "" {
+			honeybadger.Notify(err)
+		}
 		log.Println(err)
 	}
 }
