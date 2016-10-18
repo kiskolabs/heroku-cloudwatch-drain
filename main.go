@@ -46,7 +46,7 @@ func main() {
 		loggers:        make(map[string]logger.Logger),
 	}
 
-	if honeybadger.Config.APIKey == "" {
+	if honeybadger.Config.APIKey != "" {
 		http.Handle("/", honeybadger.Handler(app))
 	} else {
 		http.Handle("/", app)
@@ -86,7 +86,7 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if err = app.processMessages(r.Body, l); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		if honeybadger.Config.APIKey == "" {
+		if honeybadger.Config.APIKey != "" {
 			honeybadger.Notify(err)
 		}
 		log.Println(err)
@@ -112,7 +112,7 @@ func (app *App) processMessages(r io.Reader, l logger.Logger) error {
 	for scanner.Scan() {
 		entry, err := app.parse(scanner.Bytes())
 		if err != nil {
-			if honeybadger.Config.APIKey == "" {
+			if honeybadger.Config.APIKey != "" {
 				honeybadger.Notify(err)
 			}
 			return fmt.Errorf("unable to parse message: %s, error: %s", scanner.Text(), err)

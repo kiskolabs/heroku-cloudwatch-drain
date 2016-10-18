@@ -109,7 +109,7 @@ func (cwl *CloudWatchLogger) flush() {
 	cwl.resetBatch()
 	sort.Sort(batch)
 	if err := cwl.sendToCloudWatchLogs(batch, batchByteSize); err != nil {
-		if honeybadger.Config.APIKey == "" {
+		if honeybadger.Config.APIKey != "" {
 			honeybadger.Notify(err)
 		}
 		log.Println(err)
