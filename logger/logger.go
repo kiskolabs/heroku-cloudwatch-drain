@@ -142,7 +142,7 @@ func (cwl *CloudWatchLogger) sendToCloudWatchLogs(batch logBatch) error {
 		}
 		return fmt.Errorf("PutLogEvents failed: %s", err)
 	}
-	log.Printf("wrote %d log events (%d bytes) in %s\n", len(cwl.batch), cwl.batchByteSize, time.Since(s))
+	log.Printf("wrote %d log events (%d bytes) in %s\n", len(batch), cwl.batchByteSize, time.Since(s))
 
 	cwl.sequenceToken = resp.NextSequenceToken
 	return nil
