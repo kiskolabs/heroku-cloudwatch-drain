@@ -112,6 +112,9 @@ func (app *App) processMessages(r io.Reader, l logger.Logger) error {
 	for scanner.Scan() {
 		entry, err := app.parse(scanner.Bytes())
 		if err != nil {
+			if honeybadger.Config.APIKey == "" {
+				honeybadger.Notify(err)
+			}
 			return fmt.Errorf("unable to parse message: %s, error: %s", scanner.Text(), err)
 		}
 		m := entry.Message
