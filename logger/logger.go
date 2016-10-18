@@ -105,9 +105,10 @@ func (cwl *CloudWatchLogger) addToBatch(logEvent *cloudwatchlogs.InputLogEvent) 
 
 func (cwl *CloudWatchLogger) flush() {
 	batch := cwl.batch
+	batchByteSize := cwl.batchByteSize
 	cwl.resetBatch()
 	sort.Sort(batch)
-	if err := cwl.sendToCloudWatchLogs(batch); err != nil {
+	if err := cwl.sendToCloudWatchLogs(batch, batchByteSize); err != nil {
 		if honeybadger.Config.APIKey == "" {
 			honeybadger.Notify(err)
 		}
@@ -121,7 +122,7 @@ func (cwl *CloudWatchLogger) resetBatch() {
 	cwl.timeout = nil
 }
 
-func (cwl *CloudWatchLogger) sendToCloudWatchLogs(batch logBatch) error {
+func (cwl *CloudWatchLogger) sendToCloudWatchLogs(batch logBatch, batchByteSize int) error {
 	s := time.Now()
 	params := &cloudwatchlogs.PutLogEventsInput{
 		LogEvents:     batch,
@@ -137,12 +138,12 @@ func (cwl *CloudWatchLogger) sendToCloudWatchLogs(batch logBatch) error {
 				if err = cwl.createLogStream(); err != nil {
 					return err
 				}
-				return cwl.sendToCloudWatchLogs(batch)
+				return cwl.sendToCloudWatchLogs(batch, batchByteSize)
 			}
 		}
 		return fmt.Errorf("PutLogEvents failed: %s", err)
 	}
-	log.Printf("wrote %d log events (%d bytes) in %s\n", len(batch), cwl.batchByteSize, time.Since(s))
+	log.Printf("wrote %d log events (%d bytes) in %s\n", len(batch), batchByteSize, time.Since(s))
 
 	cwl.sequenceToken = resp.NextSequenceToken
 	return nil
