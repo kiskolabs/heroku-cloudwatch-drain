@@ -59,13 +59,20 @@ func main() {
 }
 
 func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	appName := r.URL.Path[1:]
+
+	if appName == "" && r.Method == http.MethodGet {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("The only accepted request method is POST"))
 		return
 	}
 
-	appName := r.URL.Path[1:]
 	if appName == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Request path must specify the log group name"))
