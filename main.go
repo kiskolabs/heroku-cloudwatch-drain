@@ -126,6 +126,9 @@ func (app *App) processMessages(r io.Reader, l logger.Logger) error {
 				return fmt.Errorf("failed to scan request body: %s", err)
 			}
 		}
+		if eof && len(b) == 0 {
+			break
+		}
 		entry, err := app.parse(b)
 		if err != nil {
 			honeybadger.Notify(err)
@@ -134,6 +137,9 @@ func (app *App) processMessages(r io.Reader, l logger.Logger) error {
 		m := entry.Message
 		if app.stripAnsiCodes {
 			m = stripAnsi(m)
+		}
+		if !eof {
+			m = m[:len(m)-1]
 		}
 		l.Log(entry.Time, m)
 		if eof {
