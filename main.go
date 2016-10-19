@@ -114,21 +114,31 @@ func (app *App) logger(appName string) (l logger.Logger, err error) {
 }
 
 func (app *App) processMessages(r io.Reader, l logger.Logger) error {
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		entry, err := app.parse(scanner.Bytes())
+	buf := bufio.NewReader(r)
+	eof := false
+	for {
+		b, err := buf.ReadBytes('\n')
+		if err != nil {
+			if err == io.EOF {
+				eof = true
+			} else {
+				honeybadger.Notify(err)
+				return fmt.Errorf("failed to scan request body: %s", err)
+			}
+		}
+		entry, err := app.parse(b)
 		if err != nil {
 			honeybadger.Notify(err)
-			return fmt.Errorf("unable to parse message: %s, error: %s", scanner.Text(), err)
+			return fmt.Errorf("unable to parse message: %s, error: %s", string(b), err)
 		}
 		m := entry.Message
 		if app.stripAnsiCodes {
 			m = stripAnsi(m)
 		}
 		l.Log(entry.Time, m)
-	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("failed to scan request body: %s", err)
+		if eof {
+			break
+		}
 	}
 	return nil
 }
