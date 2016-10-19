@@ -15,6 +15,7 @@ import (
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logparser"
 )
 
+// App ...
 type App struct {
 	retention      int
 	stripAnsiCodes bool

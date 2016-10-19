@@ -20,6 +20,7 @@ const (
 	logEventOverhead = 26
 )
 
+// Logger ...
 type Logger interface {
 	Log(t time.Time, s string)
 }
@@ -38,6 +39,7 @@ func (b logBatch) Swap(i, j int) {
 	b[i], b[j] = b[j], b[i]
 }
 
+// CloudWatchLogger ...
 type CloudWatchLogger struct {
 	logGroupName  string
 	logStreamName string
@@ -50,6 +52,7 @@ type CloudWatchLogger struct {
 	client        *cloudwatchlogs.CloudWatchLogs
 }
 
+// NewCloudWatchLogger ...
 func NewCloudWatchLogger(logGroupName string, retention int) (*CloudWatchLogger, error) {
 	sess, err := session.NewSession()
 	if err != nil {
@@ -69,6 +72,7 @@ func NewCloudWatchLogger(logGroupName string, retention int) (*CloudWatchLogger,
 	return cwl, nil
 }
 
+// Log ...
 func (cwl *CloudWatchLogger) Log(t time.Time, s string) {
 	cwl.logs <- &cloudwatchlogs.InputLogEvent{
 		Message:   aws.String(s),
