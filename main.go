@@ -7,8 +7,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"sync"
+	"time"
+
+	"gopkg.in/tylerb/graceful.v1"
 
 	"github.com/honeybadger-io/honeybadger-go"
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logger"
@@ -52,11 +56,15 @@ func main() {
 		honeybadger.Configure(honeybadger.Configuration{Backend: honeybadger.NewNullBackend()})
 	}
 
-	http.Handle("/", honeybadger.Handler(app))
-
-	if err := http.ListenAndServe(bind, nil); err != nil {
+	mux := http.NewServeMux()
+	mux.Handle("/", honeybadger.Handler(app))
+	err := graceful.RunWithErr(bind, 5*time.Second, mux)
+	if err != nil {
 		log.Println(err)
+		os.Exit(1)
 	}
+
+	app.Stop()
 }
 
 func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +109,21 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
+}
+
+// Stop all the loggers, flushing any pending requests.
+func (app *App) Stop() {
+	var wg sync.WaitGroup
+	wg.Add(len(app.loggers))
+	app.mu.Lock()
+	defer app.mu.Unlock()
+	for _, l := range app.loggers {
+		go func(l logger.Logger) {
+			l.Stop()
+			wg.Done()
+		}(l)
+	}
+	wg.Wait()
 }
 
 func (app *App) logger(appName string) (l logger.Logger, err error) {
