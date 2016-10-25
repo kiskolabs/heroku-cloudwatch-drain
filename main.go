@@ -15,7 +15,8 @@ import (
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logparser"
 )
 
-// App ...
+// App is a Heroku HTTPS log drain. It receives log batches as POST requests,
+// parses them, and sends them to CloudWatch Logs.
 type App struct {
 	retention      int
 	stripAnsiCodes bool

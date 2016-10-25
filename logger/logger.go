@@ -20,7 +20,8 @@ const (
 	logEventOverhead = 26
 )
 
-// Logger ...
+// The Logger interface defines the minimum set of functions any logger must
+// implement.
 type Logger interface {
 	Log(t time.Time, s string)
 }
@@ -39,7 +40,8 @@ func (b logBatch) Swap(i, j int) {
 	b[i], b[j] = b[j], b[i]
 }
 
-// CloudWatchLogger ...
+// CloudWatchLogger is a Logger that stores log entries in CloudWatch Logs. Logs
+// are automatically batched for a short period of time before being sent.
 type CloudWatchLogger struct {
 	logGroupName  string
 	logStreamName string
@@ -50,9 +52,10 @@ type CloudWatchLogger struct {
 	batchByteSize int
 	timeout       <-chan time.Time
 	client        *cloudwatchlogs.CloudWatchLogs
+	stop          chan chan bool
 }
 
-// NewCloudWatchLogger ...
+// NewCloudWatchLogger returns a CloudWatchLogger that is ready to be used.
 func NewCloudWatchLogger(logGroupName string, retention int) (*CloudWatchLogger, error) {
 	sess, err := session.NewSession()
 	if err != nil {
@@ -65,14 +68,15 @@ func NewCloudWatchLogger(logGroupName string, retention int) (*CloudWatchLogger,
 		logGroupName:  logGroupName,
 		logStreamName: uuid.NewV4().String(),
 		retention:     retention,
-		logs:          make(chan *cloudwatchlogs.InputLogEvent, 100),
+		logs:          make(chan *cloudwatchlogs.InputLogEvent),
 		client:        client,
+		stop:          make(chan chan bool),
 	}
 	go cwl.worker()
 	return cwl, nil
 }
 
-// Log ...
+// Log enqueues a log entry to be stored in CloudWatch Logs.
 func (cwl *CloudWatchLogger) Log(t time.Time, s string) {
 	cwl.logs <- &cloudwatchlogs.InputLogEvent{
 		Message:   aws.String(s),

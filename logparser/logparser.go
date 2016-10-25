@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// A ParseFunc receives a single raw (unparsed) log entry and parses it into a
+// LogEntry, which it returns.
 type ParseFunc func(b []byte) (*LogEntry, error)
 
 // A LogEntry represents a single log event containing the timestamp of the
