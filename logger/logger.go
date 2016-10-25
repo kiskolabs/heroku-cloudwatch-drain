@@ -24,6 +24,7 @@ const (
 // implement.
 type Logger interface {
 	Log(t time.Time, s string)
+	Stop()
 }
 
 type logBatch []*cloudwatchlogs.InputLogEvent
@@ -84,6 +85,14 @@ func (cwl *CloudWatchLogger) Log(t time.Time, s string) {
 	}
 }
 
+// Stop flushes all pending logs and blocks until they are sent to CloudWatch
+// Logs.
+func (cwl *CloudWatchLogger) Stop() {
+	stopped := make(chan bool)
+	cwl.stop <- stopped
+	<-stopped
+}
+
 func (cwl *CloudWatchLogger) worker() {
 	cwl.resetBatch()
 	for {
@@ -92,6 +101,11 @@ func (cwl *CloudWatchLogger) worker() {
 			cwl.addToBatch(logEvent)
 		case <-cwl.timeout:
 			cwl.flush()
+		case stopped := <-cwl.stop:
+			if len(cwl.batch) > 0 {
+				cwl.flush()
+			}
+			stopped <- true
 		}
 	}
 }

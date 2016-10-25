@@ -1,5 +1,11 @@
 {
 	"comment": "",
+	"heroku": {
+		"goVersion": "go1.7",
+		"install": [
+			"."
+		]
+	},
 	"ignore": "test",
 	"package": [
 		{
@@ -207,11 +213,13 @@
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "0d5a14c5a477957864f3b747d95255ad4e34bcc0",
 			"revisionTime": "2015-11-02T02:08:28Z"
+		},
+		{
+			"checksumSHA1": "hiOUviIMDKo7y918uBiEhfJyOkk=",
+			"path": "gopkg.in/tylerb/graceful.v1",
+			"revision": "50a48b6e73fcc75b45e22c05b79629a67c79e938",
+			"revisionTime": "2016-08-29T01:00:30Z"
 		}
 	],
-	"rootPath": "github.com/kiskolabs/heroku-cloudwatch-drain",
-	"heroku": {
-		"install" : [ "." ],
-		"goVersion": "go1.7"
-	}
+	"rootPath": "github.com/kiskolabs/heroku-cloudwatch-drain"
 }

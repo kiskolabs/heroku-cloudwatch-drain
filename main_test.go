@@ -111,3 +111,5 @@ type LastMessageLogger struct {
 func (l *LastMessageLogger) Log(t time.Time, s string) {
 	l.m = s
 }
+
+func (l *LastMessageLogger) Stop() {}
