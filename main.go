@@ -17,6 +17,7 @@ import (
 	"github.com/honeybadger-io/honeybadger-go"
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logger"
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logparser"
+	"github.com/newrelic/go-agent"
 )
 
 // App is a Heroku HTTPS log drain. It receives log batches as POST requests,
@@ -56,9 +57,24 @@ func main() {
 		honeybadger.Configure(honeybadger.Configuration{Backend: honeybadger.NewNullBackend()})
 	}
 
+	nrAppName := os.Getenv("NEW_RELIC_APP_NAME")
+	if nrAppName == "" {
+		nrAppName = "heroku-cloudwatch-drain"
+	}
+
+	nrLicense := os.Getenv("NEW_RELIC_LICENSE_KEY")
+	nrConfig := newrelic.NewConfig(nrAppName, nrLicense)
+	nrConfig.Enabled = (nrLicense != "")
+
+	nrApp, err := newrelic.NewApplication(nrConfig)
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+
 	mux := http.NewServeMux()
-	mux.Handle("/", honeybadger.Handler(app))
-	err := graceful.RunWithErr(bind, 5*time.Second, mux)
+	mux.Handle(newrelic.WrapHandle(nrApp, "/", honeybadger.Handler(app)))
+	err = graceful.RunWithErr(bind, 5*time.Second, mux)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
