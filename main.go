@@ -27,6 +27,7 @@ type App struct {
 	stripAnsiCodes bool
 	user, pass     string
 	parse          logparser.ParseFunc
+	newrelic       newrelic.Application
 
 	loggers map[string]logger.Logger
 	mu      sync.Mutex // protects loggers
@@ -44,19 +45,6 @@ func main() {
 	flag.BoolVar(&stripAnsiCodes, "strip-ansi-codes", false, "strip ANSI codes from log messages")
 	flag.Parse()
 
-	app := &App{
-		retention:      retention,
-		user:           user,
-		pass:           pass,
-		stripAnsiCodes: stripAnsiCodes,
-		parse:          logparser.Parse,
-		loggers:        make(map[string]logger.Logger),
-	}
-
-	if honeybadger.Config.APIKey == "" {
-		honeybadger.Configure(honeybadger.Configuration{Backend: honeybadger.NewNullBackend()})
-	}
-
 	nrAppName := os.Getenv("NEW_RELIC_APP_NAME")
 	if nrAppName == "" {
 		nrAppName = "heroku-cloudwatch-drain"
@@ -70,6 +58,20 @@ func main() {
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
+	}
+
+	app := &App{
+		retention:      retention,
+		user:           user,
+		pass:           pass,
+		stripAnsiCodes: stripAnsiCodes,
+		parse:          logparser.Parse,
+		loggers:        make(map[string]logger.Logger),
+		newrelic:       nrApp,
+	}
+
+	if honeybadger.Config.APIKey == "" {
+		honeybadger.Configure(honeybadger.Configuration{Backend: honeybadger.NewNullBackend()})
 	}
 
 	mux := http.NewServeMux()
@@ -110,6 +112,8 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	txn, _ := w.(newrelic.Transaction)
+
 	l, err := app.logger(appName)
 	if err != nil {
 		log.Printf("failed to create logger for app %s: %s\n", appName, err)
@@ -117,7 +121,7 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = app.processMessages(r.Body, l); err != nil {
+	if err = app.processMessages(r.Body, l, txn); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		honeybadger.Notify(err)
 		log.Println(err)
@@ -147,13 +151,16 @@ func (app *App) logger(appName string) (l logger.Logger, err error) {
 	defer app.mu.Unlock()
 	l, ok := app.loggers[appName]
 	if !ok {
-		l, err = logger.NewCloudWatchLogger(appName, app.retention)
+		l, err = logger.NewCloudWatchLogger(appName, app.retention, app.newrelic)
 		app.loggers[appName] = l
 	}
 	return l, err
 }
 
-func (app *App) processMessages(r io.Reader, l logger.Logger) error {
+func (app *App) processMessages(r io.Reader, l logger.Logger, txn newrelic.Transaction) error {
+	if txn != nil {
+		defer newrelic.StartSegment(txn, "processMessages").End()
+	}
 	buf := bufio.NewReader(r)
 	eof := false
 	for {

@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/honeybadger-io/honeybadger-go"
+	"github.com/newrelic/go-agent"
 	"github.com/satori/go.uuid"
 )
 
@@ -54,10 +55,11 @@ type CloudWatchLogger struct {
 	timeout       <-chan time.Time
 	client        *cloudwatchlogs.CloudWatchLogs
 	stop          chan chan bool
+	newrelic      newrelic.Application
 }
 
 // NewCloudWatchLogger returns a CloudWatchLogger that is ready to be used.
-func NewCloudWatchLogger(logGroupName string, retention int) (*CloudWatchLogger, error) {
+func NewCloudWatchLogger(logGroupName string, retention int, nrApp newrelic.Application) (*CloudWatchLogger, error) {
 	sess, err := session.NewSession()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create AWS session: %s", err)
@@ -72,6 +74,7 @@ func NewCloudWatchLogger(logGroupName string, retention int) (*CloudWatchLogger,
 		logs:          make(chan *cloudwatchlogs.InputLogEvent),
 		client:        client,
 		stop:          make(chan chan bool),
+		newrelic:      nrApp,
 	}
 	go cwl.worker()
 	return cwl, nil
@@ -150,7 +153,9 @@ func (cwl *CloudWatchLogger) sendToCloudWatchLogs(batch logBatch, batchByteSize 
 		LogStreamName: aws.String(cwl.logStreamName),
 		SequenceToken: cwl.sequenceToken,
 	}
+	txn := cwl.newrelic.StartTransaction("PutLogEvents", nil, nil)
 	resp, err := cwl.client.PutLogEvents(params)
+	txn.End()
 
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
@@ -174,7 +179,10 @@ func (cwl *CloudWatchLogger) createLogStream() error {
 		LogGroupName:  aws.String(cwl.logGroupName),
 		LogStreamName: aws.String(cwl.logStreamName),
 	}
-	if _, err := cwl.client.CreateLogStream(params); err != nil {
+	txn := cwl.newrelic.StartTransaction("CreateLogStream", nil, nil)
+	_, err := cwl.client.CreateLogStream(params)
+	txn.End()
+	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
 			if awsErr.Code() == "ResourceNotFoundException" {
 				if err = cwl.createLogGroup(); err != nil {
@@ -192,7 +200,10 @@ func (cwl *CloudWatchLogger) createLogGroup() error {
 	params := &cloudwatchlogs.CreateLogGroupInput{
 		LogGroupName: aws.String(cwl.logGroupName),
 	}
-	if _, err := cwl.client.CreateLogGroup(params); err != nil {
+	txn := cwl.newrelic.StartTransaction("CreateLogGroup", nil, nil)
+	_, err := cwl.client.CreateLogGroup(params)
+	txn.End()
+	if err != nil {
 		return fmt.Errorf("CreateLogGroup failed: %s", err)
 	}
 	return cwl.putRetentionPolicy()
@@ -206,7 +217,9 @@ func (cwl *CloudWatchLogger) putRetentionPolicy() error {
 		LogGroupName:    aws.String(cwl.logGroupName),
 		RetentionInDays: aws.Int64(int64(cwl.retention)),
 	}
+	txn := cwl.newrelic.StartTransaction("PutRetentionPolicy", nil, nil)
 	_, err := cwl.client.PutRetentionPolicy(params)
+	txn.End()
 	if err != nil {
 		return fmt.Errorf("PutRetentionPolicy failed: %s", err)
 	}
