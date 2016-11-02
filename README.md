@@ -28,6 +28,12 @@ page.
 
 Set the `HONEYBADGER_API_KEY` environment variable to report panics and errors to Honeybadger.
 
+If you've deployed heroku-cloudwatch-drain to Heroku, see [Honeybadger's Heroku specific instructions](http://docs.honeybadger.io/guides/heroku.html) for more detailed information.
+
+## New Relic Integration
+
+Set the `NEW_RELIC_LICENSE_KEY` environment variable to enable the New Relic integration. Optionally, you can set the `NEW_RELIC_APP_NAME` to customize the app name on New Relic.
+
 ## Sending logs
 
 Logs should be sent to this application, with the log group name as the URL
