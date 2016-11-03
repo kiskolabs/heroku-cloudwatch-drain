@@ -6,6 +6,12 @@ A Heroku HTTPS log drain that stores logs in CloudWatch Logs.
 
 ## Getting started
 
+### Heroku
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
+### Locally
+
 Build and install:
 
     $ go install
