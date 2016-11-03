@@ -1,0 +1,45 @@
+{
+  "name": "heroku-cloudwatch-drain",
+  "description": "A Heroku HTTPS log drain that stores logs in CloudWatch Logs.",
+  "keywords": [
+    "logging",
+    "logs",
+    "aws",
+    "cloudwatch",
+    "logplex"
+  ],
+  "website": "https://github.com/kiskolabs/heroku-cloudwatch-drain",
+  "repository": "https://github.com/kiskolabs/heroku-cloudwatch-drain",
+  "success_url": "/",
+  "env": {
+    "USER": {
+      "description": "The basic auth username.",
+      "value": "heroku-cloudwatch-drain",
+      "required": true
+    },
+    "PASS": {
+      "description": "The basic auth password.",
+      "generator": "secret",
+      "required": true
+    },
+    "AWS_ACCESS_KEY_ID": {
+      "description": "The AWS access key ID.",
+      "required": true
+    },
+    "AWS_SECRET_ACCESS_KEY": {
+      "description": "The AWS secret access key.",
+      "required": true
+    },
+    "AWS_REGION": {
+      "description": "The AWS region.",
+      "value": "us-east-1",
+      "required": true
+    }
+  },
+  "image": "heroku/go",
+  "buildpacks": [
+    {
+      "url": "heroku/go"
+    }
+  ]
+}
