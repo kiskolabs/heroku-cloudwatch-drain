@@ -117,7 +117,9 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	txn, _ := w.(newrelic.Transaction)
-	txn.AddAttribute("AppName", appName)
+	if err := txn.AddAttribute("AppName", appName); nil != err {
+		log.Printf("failed to add New Relic attribute for app %s: %s\n", appName, err)
+	}
 
 	l, err := app.logger(appName)
 	if err != nil {
