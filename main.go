@@ -88,6 +88,10 @@ func main() {
 func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	appName := r.URL.Path[1:]
 
+	honeybadger.SetContext(honeybadger.Context{
+		"AppName": appName,
+	})
+
 	if appName == "" && r.Method == http.MethodGet {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
@@ -113,6 +117,7 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	txn, _ := w.(newrelic.Transaction)
+	txn.AddAttribute("AppName", appName)
 
 	l, err := app.logger(appName)
 	if err != nil {
