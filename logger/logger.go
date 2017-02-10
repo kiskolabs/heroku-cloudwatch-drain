@@ -65,7 +65,7 @@ func NewCloudWatchLogger(logGroupName string, retention int, nrApp newrelic.Appl
 		return nil, fmt.Errorf("failed to create AWS session: %s", err)
 	}
 
-	client := cloudwatchlogs.New(sess)
+	client := cloudwatchlogs.New(sess, aws.NewConfig().WithMaxRetries(0))
 
 	cwl := &CloudWatchLogger{
 		logGroupName:  logGroupName,
@@ -166,6 +166,7 @@ func (cwl *CloudWatchLogger) sendToCloudWatchLogs(batch logBatch, batchByteSize 
 				return cwl.sendToCloudWatchLogs(batch, batchByteSize)
 			}
 		}
+		cwl.reEnqueueBatch(batch)
 		return fmt.Errorf("PutLogEvents failed: %s", err)
 	}
 	log.Printf("wrote %d log events (%d bytes) in %s\n", len(batch), batchByteSize, time.Since(s))
@@ -224,4 +225,10 @@ func (cwl *CloudWatchLogger) putRetentionPolicy() error {
 		return fmt.Errorf("PutRetentionPolicy failed: %s", err)
 	}
 	return nil
+}
+
+func (cwl *CloudWatchLogger) reEnqueueBatch(batch logBatch) {
+	for _, logEvent := range batch {
+		cwl.addToBatch(logEvent)
+	}
 }
