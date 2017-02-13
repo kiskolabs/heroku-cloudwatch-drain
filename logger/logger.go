@@ -134,7 +134,14 @@ func (cwl *CloudWatchLogger) flush() {
 	cwl.resetBatch()
 	sort.Sort(batch)
 	if err := cwl.sendToCloudWatchLogs(batch, batchByteSize); err != nil {
-		honeybadger.Notify(err)
+		if awsErr, ok := err.(awserr.Error); ok {
+			honeybadger.Notify(err, honeybadger.ErrorClass{
+				Name: awsErr.Code(),
+			})
+		} else {
+			honeybadger.Notify(err)
+		}
+
 		log.Println(err)
 	}
 }
