@@ -74,6 +74,15 @@ func main() {
 		honeybadger.Configure(honeybadger.Configuration{Backend: honeybadger.NewNullBackend()})
 	}
 
+	honeybadger.BeforeNotify(
+		func(notice *honeybadger.Notice) error {
+			if notice.ErrorClass == "errors.errorString" {
+				notice.Fingerprint = notice.ErrorMessage
+			}
+			return nil
+		},
+	)
+
 	mux := http.NewServeMux()
 	mux.Handle(newrelic.WrapHandle(nrApp, "/", honeybadger.Handler(app)))
 	err = graceful.RunWithErr(bind, 5*time.Second, mux)
