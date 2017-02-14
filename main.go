@@ -125,8 +125,16 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	honeybadger.SetContext(honeybadger.Context{
+		"BasicAuth": "passed",
+	})
+
 	txn, _ := w.(newrelic.Transaction)
 	if txn != nil {
+		honeybadger.SetContext(honeybadger.Context{
+			"NewRelicTransaction": "created",
+		})
+
 		if err := txn.AddAttribute("AppName", appName); nil != err {
 			log.Printf("failed to add New Relic attribute for app %s: %s\n", appName, err)
 		}
