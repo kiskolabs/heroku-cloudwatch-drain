@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -135,10 +136,18 @@ func (cwl *CloudWatchLogger) flush() {
 	sort.Sort(batch)
 	if err := cwl.sendToCloudWatchLogs(batch, batchByteSize); err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
+			// If it's an AWS error, use the AWS error code on Honeybadger
 			honeybadger.Notify(err, honeybadger.ErrorClass{
 				Name: awsErr.Code(),
 			})
+		} else if strings.Index(err.Error(), " failed: ") > 0 {
+			// Better Honeybadger reports for custom errors
+			splits := strings.SplitN(err.Error(), " failed: ", 2)
+			honeybadger.Notify(err, honeybadger.ErrorClass{
+				Name: splits[0],
+			})
 		} else {
+			// Fallback to a regular error notification
 			honeybadger.Notify(err)
 		}
 
