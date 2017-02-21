@@ -97,9 +97,9 @@ func main() {
 func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	appName := r.URL.Path[1:]
 
-	honeybadger.SetContext(honeybadger.Context{
-		"AppName": appName,
-	})
+	// honeybadger.SetContext(honeybadger.Context{
+	// 	"AppName": appName,
+	// })
 
 	if r.Method == http.MethodGet {
 		if appName == "" {
