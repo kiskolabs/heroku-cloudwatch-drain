@@ -101,7 +101,7 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"AppName": appName,
 	})
 
-	if appName == "" && r.Method == http.MethodGet {
+	if r.Method == http.MethodGet {
 		if appName == "" {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("OK"))
