@@ -102,8 +102,13 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if appName == "" && r.Method == http.MethodGet {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		if appName == "" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("Not found"))
+		}
 		return
 	}
 
