@@ -174,6 +174,9 @@ func (cwl *CloudWatchLogger) sendToCloudWatchLogs(batch logBatch, batchByteSize 
 	txn.End()
 
 	if err != nil {
+		if resp != nil && resp.NextSequenceToken != nil {
+			cwl.sequenceToken = resp.NextSequenceToken
+		}
 		if awsErr, ok := err.(awserr.Error); ok {
 			if awsErr.Code() == "ResourceNotFoundException" {
 				if err = cwl.createLogStream(); err != nil {
