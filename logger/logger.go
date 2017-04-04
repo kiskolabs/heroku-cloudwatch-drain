@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	maxBatchByteSize = 1048576 - 1024 // Reserve 1KB for request body overhead.
+	maxBatchByteSize = 1048576 - 2048 // Reserve 2KB for request body overhead.
 	maxBatchLength   = 10000
 	logEventOverhead = 26
 )
