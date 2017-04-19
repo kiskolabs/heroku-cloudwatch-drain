@@ -25,10 +25,10 @@ var app = &App{
 }
 var server = httptest.NewServer(app)
 
-func TestRequestMustNotBeGet(t *testing.T) {
+func TestRequestNotFoundWithGet(t *testing.T) {
 	r, err := http.Get(server.URL + "/app")
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, r.StatusCode)
+	assert.Equal(t, http.StatusNotFound, r.StatusCode)
 }
 
 func TestRequestPathMustBeAppName(t *testing.T) {
