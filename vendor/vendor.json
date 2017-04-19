@@ -1,7 +1,7 @@
 {
 	"comment": "",
 	"heroku": {
-		"goVersion": "go1.7",
+		"goVersion": "go1.8",
 		"install": [
 			"."
 		]
