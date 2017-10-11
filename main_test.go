@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kiskolabs/heroku-cloudwatch-drain/logger"
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logparser"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +19,7 @@ var parseFunc = func(b []byte) (*logparser.LogEntry, error) {
 }
 
 var app = &App{
-	loggers: map[string]logger.Logger{"app": l},
+	loggers: map[string]logger{"app": l},
 	parse:   parseFunc,
 }
 var server = httptest.NewServer(app)
@@ -112,4 +111,4 @@ func (l *LastMessageLogger) Log(t time.Time, s string) {
 	l.m = s
 }
 
-func (l *LastMessageLogger) Stop() {}
+func (l *LastMessageLogger) Close() {}

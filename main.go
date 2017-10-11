@@ -14,8 +14,10 @@ import (
 
 	"gopkg.in/tylerb/graceful.v1"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/honeybadger-io/honeybadger-go"
-	"github.com/kiskolabs/heroku-cloudwatch-drain/logger"
+	"github.com/jcxplorer/cwlogger"
 	"github.com/kiskolabs/heroku-cloudwatch-drain/logparser"
 	"github.com/newrelic/go-agent"
 )
@@ -29,8 +31,13 @@ type App struct {
 	parse          logparser.ParseFunc
 	newrelic       newrelic.Application
 
-	loggers map[string]logger.Logger
+	loggers map[string]logger
 	mu      sync.Mutex // protects loggers
+}
+
+type logger interface {
+	Log(t time.Time, s string)
+	Close()
 }
 
 func main() {
@@ -66,7 +73,7 @@ func main() {
 		pass:           pass,
 		stripAnsiCodes: stripAnsiCodes,
 		parse:          logparser.Parse,
-		loggers:        make(map[string]logger.Logger),
+		loggers:        make(map[string]logger),
 		newrelic:       nrApp,
 	}
 
@@ -161,26 +168,33 @@ func (app *App) Stop() {
 	app.mu.Lock()
 	defer app.mu.Unlock()
 	for _, l := range app.loggers {
-		go func(l logger.Logger) {
-			l.Stop()
+		go func(l logger) {
+			l.Close()
 			wg.Done()
 		}(l)
 	}
 	wg.Wait()
 }
 
-func (app *App) logger(appName string) (l logger.Logger, err error) {
+func (app *App) logger(appName string) (l logger, err error) {
 	app.mu.Lock()
 	defer app.mu.Unlock()
 	l, ok := app.loggers[appName]
 	if !ok {
-		l, err = logger.NewCloudWatchLogger(appName, app.retention, app.newrelic)
+		l, err = cwlogger.New(&cwlogger.Config{
+			LogGroupName: appName,
+			Retention:    app.retention,
+			Client:       cloudwatchlogs.New(session.New()),
+			ErrorReporter: func(err error) {
+				honeybadger.Notify(err)
+			},
+		})
 		app.loggers[appName] = l
 	}
 	return l, err
 }
 
-func (app *App) processMessages(r io.Reader, l logger.Logger, txn newrelic.Transaction) error {
+func (app *App) processMessages(r io.Reader, l logger, txn newrelic.Transaction) error {
 	if txn != nil {
 		defer newrelic.StartSegment(txn, "processMessages").End()
 	}
