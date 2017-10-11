@@ -473,11 +473,10 @@ func (app *app) StartTransaction(name string, w http.ResponseWriter, r *http.Req
 	return upgradeTxn(newTxn(txnInput{
 		Config:     app.config,
 		Reply:      run.ConnectReply,
-		Request:    r,
 		W:          w,
 		Consumer:   app,
 		attrConfig: app.attrConfig,
-	}, name))
+	}, r, name))
 }
 
 var (
@@ -531,7 +530,7 @@ func (app *app) Consume(id internal.AgentRunID, data internal.Harvestable) {
 	}
 }
 
-func (app *app) ExpectCustomEvents(t internal.Validator, want []internal.WantCustomEvent) {
+func (app *app) ExpectCustomEvents(t internal.Validator, want []internal.WantEvent) {
 	internal.ExpectCustomEvents(internal.ExtendValidator(t, "custom events"), app.testHarvest.CustomEvents, want)
 }
 
@@ -540,12 +539,12 @@ func (app *app) ExpectErrors(t internal.Validator, want []internal.WantError) {
 	internal.ExpectErrors(t, app.testHarvest.ErrorTraces, want)
 }
 
-func (app *app) ExpectErrorEvents(t internal.Validator, want []internal.WantErrorEvent) {
+func (app *app) ExpectErrorEvents(t internal.Validator, want []internal.WantEvent) {
 	t = internal.ExtendValidator(t, "error events")
 	internal.ExpectErrorEvents(t, app.testHarvest.ErrorEvents, want)
 }
 
-func (app *app) ExpectTxnEvents(t internal.Validator, want []internal.WantTxnEvent) {
+func (app *app) ExpectTxnEvents(t internal.Validator, want []internal.WantEvent) {
 	t = internal.ExtendValidator(t, "txn events")
 	internal.ExpectTxnEvents(t, app.testHarvest.TxnEvents, want)
 }

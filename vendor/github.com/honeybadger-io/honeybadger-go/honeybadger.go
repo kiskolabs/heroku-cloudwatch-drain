@@ -8,7 +8,7 @@ import (
 )
 
 // VERSION defines the version of the honeybadger package.
-const VERSION = "0.2.0"
+const VERSION = "0.2.1"
 
 var (
 	// client is a pre-defined "global" client.
@@ -83,6 +83,7 @@ func Notify(err interface{}, extra ...interface{}) (string, error) {
 func Monitor() {
 	if err := recover(); err != nil {
 		DefaultClient.Notify(newError(err, 2))
+		DefaultClient.Flush()
 		panic(err)
 	}
 }

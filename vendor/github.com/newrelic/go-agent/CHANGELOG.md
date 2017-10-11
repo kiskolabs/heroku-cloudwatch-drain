@@ -1,5 +1,56 @@
 ## ChangeLog
 
+## 1.9.0
+
+* Added support for [github.com/gin-gonic/gin](https://github.com/gin-gonic/gin)
+  in the new `nrgin` package.
+  * [Documentation](http://godoc.org/github.com/newrelic/go-agent/_integrations/nrgin/v1)
+  * [Example](examples/_gin/main.go)
+
+## 1.8.0
+
+* Fixed incorrect metric rule application when the metric rule is flagged to
+  terminate and matches but the name is unchanged.
+
+* `Segment.End()`, `DatastoreSegment.End()`, and `ExternalSegment.End()` methods now return an
+  error which may be helpful in diagnosing situations where segment data is unexpectedly missing.
+
+## 1.7.0
+
+* Added support for [gorilla/mux](http://github.com/gorilla/mux) in the new `nrgorilla`
+  package.
+  * [Documentation](http://godoc.org/github.com/newrelic/go-agent/_integrations/nrgorilla/v1)
+  * [Example](examples/_gorilla/main.go)
+
+## 1.6.0
+
+* Added support for custom error messages and stack traces.  Errors provided
+  to `Transaction.NoticeError` will now be checked to see if
+  they implement [ErrorClasser](https://godoc.org/github.com/newrelic/go-agent#ErrorClasser)
+  and/or [StackTracer](https://godoc.org/github.com/newrelic/go-agent#StackTracer).
+  Thanks to @fgrosse for this proposal.
+
+* Added support for [pkg/errors](https://github.com/pkg/errors).  Thanks to
+  @fgrosse for this work.
+  * [documentation](https://godoc.org/github.com/newrelic/go-agent/_integrations/nrpkgerrors)
+  * [example](https://github.com/newrelic/go-agent/blob/master/_integrations/nrpkgerrors/nrpkgerrors.go)
+
+* Fixed tests for Go 1.8.
+
+## 1.5.0
+
+* Added support for Windows.  Thanks to @ianomad and @lvxv for the contributions.
+
+* The number of heap objects allocated is recorded in the
+  `Memory/Heap/AllocatedObjects` metric.  This will soon be displayed on the "Go
+  runtime" page.
+
+* If the [DatastoreSegment](https://godoc.org/github.com/newrelic/go-agent#DatastoreSegment)
+  fields `Host` and `PortPathOrID` are not provided, they will no longer appear
+  as `"unknown"` in transaction traces and slow query traces.
+
+* Stack traces will now be nicely aligned in the APM UI.
+
 ## 1.4.0
 
 * Added support for slow query traces.  Slow datastore segments will now

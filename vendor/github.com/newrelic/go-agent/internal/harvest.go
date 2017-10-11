@@ -1,6 +1,10 @@
 package internal
 
-import "time"
+import (
+	"strings"
+	"sync"
+	"time"
+)
 
 // Harvestable is something that can be merged into a Harvest.
 type Harvestable interface {
@@ -13,7 +17,7 @@ type Harvest struct {
 	CustomEvents *customEvents
 	TxnEvents    *txnEvents
 	ErrorEvents  *errorEvents
-	ErrorTraces  *harvestErrors
+	ErrorTraces  harvestErrors
 	TxnTraces    *harvestTraces
 	SlowSQLs     *slowQueries
 }
@@ -44,6 +48,29 @@ func NewHarvest(now time.Time) *Harvest {
 	}
 }
 
+var (
+	trackMutex   sync.Mutex
+	trackMetrics []string
+)
+
+// TrackUsage helps track which integration packages are used.
+func TrackUsage(s ...string) {
+	trackMutex.Lock()
+	defer trackMutex.Unlock()
+
+	m := "Supportability/" + strings.Join(s, "/")
+	trackMetrics = append(trackMetrics, m)
+}
+
+func createTrackUsageMetrics(metrics *metricTable) {
+	trackMutex.Lock()
+	defer trackMutex.Unlock()
+
+	for _, m := range trackMetrics {
+		metrics.addSingleCount(m, forced)
+	}
+}
+
 // CreateFinalMetrics creates extra metrics at harvest time.
 func (h *Harvest) CreateFinalMetrics() {
 	h.Metrics.addSingleCount(instanceReporting, forced)
@@ -60,6 +87,8 @@ func (h *Harvest) CreateFinalMetrics() {
 	if h.Metrics.numDropped > 0 {
 		h.Metrics.addCount(supportabilityDropped, float64(h.Metrics.numDropped), forced)
 	}
+
+	createTrackUsageMetrics(h.Metrics)
 }
 
 // PayloadCreator is a data type in the harvest.
@@ -74,20 +103,8 @@ type PayloadCreator interface {
 	Data(agentRunID string, harvestStart time.Time) ([]byte, error)
 }
 
-// CreateTxnMetricsArgs contains the parameters to CreateTxnMetrics.
-type CreateTxnMetricsArgs struct {
-	IsWeb          bool
-	Duration       time.Duration
-	Exclusive      time.Duration
-	Name           string
-	Zone           ApdexZone
-	ApdexThreshold time.Duration
-	HasErrors      bool
-	Queueing       time.Duration
-}
-
 // CreateTxnMetrics creates metrics for a transaction.
-func CreateTxnMetrics(args CreateTxnMetricsArgs, metrics *metricTable) {
+func CreateTxnMetrics(args *TxnData, metrics *metricTable) {
 	// Duration Metrics
 	rollup := backgroundRollup
 	if args.IsWeb {
@@ -95,30 +112,26 @@ func CreateTxnMetrics(args CreateTxnMetricsArgs, metrics *metricTable) {
 		metrics.addDuration(dispatcherMetric, "", args.Duration, 0, forced)
 	}
 
-	metrics.addDuration(args.Name, "", args.Duration, args.Exclusive, forced)
+	metrics.addDuration(args.FinalName, "", args.Duration, args.Exclusive, forced)
 	metrics.addDuration(rollup, "", args.Duration, args.Exclusive, forced)
 
 	// Apdex Metrics
 	if args.Zone != ApdexNone {
 		metrics.addApdex(apdexRollup, "", args.ApdexThreshold, args.Zone, forced)
 
-		mname := apdexPrefix + removeFirstSegment(args.Name)
+		mname := apdexPrefix + removeFirstSegment(args.FinalName)
 		metrics.addApdex(mname, "", args.ApdexThreshold, args.Zone, unforced)
 	}
 
 	// Error Metrics
-	if args.HasErrors {
-		metrics.addSingleCount(errorsAll, forced)
-		if args.IsWeb {
-			metrics.addSingleCount(errorsWeb, forced)
-		} else {
-			metrics.addSingleCount(errorsBackground, forced)
-		}
-		metrics.addSingleCount(errorsPrefix+args.Name, forced)
+	if args.HasErrors() {
+		metrics.addSingleCount(errorsRollupMetric.all, forced)
+		metrics.addSingleCount(errorsRollupMetric.webOrOther(args.IsWeb), forced)
+		metrics.addSingleCount(errorsPrefix+args.FinalName, forced)
 	}
 
 	// Queueing Metrics
-	if args.Queueing > 0 {
-		metrics.addDuration(queueMetric, "", args.Queueing, args.Queueing, forced)
+	if args.Queuing > 0 {
+		metrics.addDuration(queueMetric, "", args.Queuing, args.Queuing, forced)
 	}
 }
