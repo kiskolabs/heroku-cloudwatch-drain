@@ -2,32 +2,21 @@ package internal
 
 import (
 	"bytes"
-	"fmt"
 	"path"
 	"runtime"
-	"strings"
-
-	"github.com/newrelic/go-agent/internal/jsonx"
 )
 
 // StackTrace is a stack trace.
-type StackTrace struct {
-	callers []uintptr
-	written int
-}
+type StackTrace []uintptr
 
 // GetStackTrace returns a new StackTrace.
-func GetStackTrace(skipFrames int) *StackTrace {
-	st := &StackTrace{}
-
+func GetStackTrace(skipFrames int) StackTrace {
 	skip := 2 // skips runtime.Callers and this function
 	skip += skipFrames
 
-	st.callers = make([]uintptr, maxStackTraceFrames)
-	st.written = runtime.Callers(skip, st.callers)
-	st.callers = st.callers[0:st.written]
-
-	return st
+	callers := make([]uintptr, maxStackTraceFrames)
+	written := runtime.Callers(skip, callers)
+	return StackTrace(callers[0:written])
 }
 
 func pcToFunc(pc uintptr) (*runtime.Func, uintptr) {
@@ -42,54 +31,48 @@ func pcToFunc(pc uintptr) (*runtime.Func, uintptr) {
 	return runtime.FuncForPC(place), place
 }
 
-func topCallerNameBase(st *StackTrace) string {
-	f, _ := pcToFunc(st.callers[0])
+func topCallerNameBase(st StackTrace) string {
+	f, _ := pcToFunc(st[0])
 	if nil == f {
 		return ""
 	}
 	return path.Base(f.Name())
 }
 
-// simplifyStackTraceFilename makes stack traces smaller and more readable by
-// removing anything preceding the first occurrence of `/src/`.  This is
-// intended to remove the $GOROOT and the $GOPATH.
-func simplifyStackTraceFilename(raw string) string {
-	idx := strings.Index(raw, "/src/")
-	if idx < 0 {
-		return raw
-	}
-	return raw[idx+5:]
-}
-
-const (
-	unknownStackTraceFunc = "unknown"
-)
-
 // WriteJSON adds the stack trace to the buffer in the JSON form expected by the
 // collector.
-func (st *StackTrace) WriteJSON(buf *bytes.Buffer) {
+func (st StackTrace) WriteJSON(buf *bytes.Buffer) {
 	buf.WriteByte('[')
-	for i, pc := range st.callers {
+	for i, pc := range st {
+		// Stack traces may be provided by the customer, and therefore
+		// may be excessively long.  The truncation is done here to
+		// facilitate testing.
+		if i >= maxStackTraceFrames {
+			break
+		}
 		if i > 0 {
 			buf.WriteByte(',')
 		}
-		f, place := pcToFunc(pc)
-		str := unknownStackTraceFunc
-		if nil != f {
-			// Format designed to match the Ruby agent.
+		// Implements the format documented here:
+		// https://source.datanerd.us/agents/agent-specs/blob/master/Stack-Traces.md
+		buf.WriteByte('{')
+		if f, place := pcToFunc(pc); nil != f {
 			name := path.Base(f.Name())
 			file, line := f.FileLine(place)
-			str = fmt.Sprintf("%s:%d:in `%s'",
-				simplifyStackTraceFilename(file), line, name)
+
+			w := jsonFieldsWriter{buf: buf}
+			w.stringField("filepath", file)
+			w.stringField("name", name)
+			w.intField("line", int64(line))
 		}
-		jsonx.AppendString(buf, str)
+		buf.WriteByte('}')
 	}
 	buf.WriteByte(']')
 }
 
 // MarshalJSON prepares JSON in the format expected by the collector.
-func (st *StackTrace) MarshalJSON() ([]byte, error) {
-	estimate := 256 * len(st.callers)
+func (st StackTrace) MarshalJSON() ([]byte, error) {
+	estimate := 256 * len(st)
 	buf := bytes.NewBuffer(make([]byte, 0, estimate))
 
 	st.WriteJSON(buf)

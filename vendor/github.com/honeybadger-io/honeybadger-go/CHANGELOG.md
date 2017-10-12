@@ -5,6 +5,12 @@ adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased][unreleased]
 
+## [0.2.1] - 2017-09-14
+### Fixed
+- Previously, if you put `honeybadger.Monitor()` in your main func, the app
+  could finish and exit before the error was sent to honeybadger. We now Flush
+  notices before re-panicking.
+
 ## [0.2.0] - 2016-10-14
 ### Changed
 - Sunset performance metrics. See
