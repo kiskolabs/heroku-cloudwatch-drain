@@ -4,6 +4,6 @@ deps:
 	go mod tidy
 	go mod vendor
 build:
-	GOARCH=amd64 GOOS=linux go build -o drain
+	GOARCH=amd64 GOOS=linux go build -o heroku-cloudwatch-drain 
 
 .PHONY: deps build
