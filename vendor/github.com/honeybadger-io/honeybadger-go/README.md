@@ -147,6 +147,12 @@ with the same fingerprint will be grouped together:
 honeybadger.Notify(err, honeybadger.Fingerprint{"A unique string"})
 ```
 
+To tag errors in Honeybadger:
+
+```go
+honeybadger.Notify(err, honeybadger.Tags{"timeout", "http"})
+```
+
 ---
 
 
@@ -155,6 +161,8 @@ honeybadger.Notify(err, honeybadger.Fingerprint{"A unique string"})
 This method lets you set context data that will be sent if an error should occur.
 
 For example, it's often useful to record the current user's ID when an error occurs in a web app. To do that, just use `SetContext` to set the user id on each request. If an error occurs, the id will be reported with it.
+
+**Note**: This method is currently shared across goroutines, and therefore may not be optimal for use in highly concurrent use cases, such as HTTP requests. See [issue #35](https://github.com/honeybadger-io/honeybadger-go/issues/35).
 
 #### Examples:
 

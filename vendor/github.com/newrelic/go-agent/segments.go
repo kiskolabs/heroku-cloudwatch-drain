@@ -17,12 +17,13 @@ type Segment struct {
 // DatastoreSegment is used to instrument calls to databases and object stores.
 // Here is an example:
 //
-// 	defer newrelic.DatastoreSegment{
+// 	ds := &newrelic.DatastoreSegment{
 // 		StartTime:  newrelic.StartSegmentNow(txn),
 // 		Product:    newrelic.DatastoreMySQL,
 // 		Collection: "my_table",
 // 		Operation:  "SELECT",
-// 	}.End()
+// 	}
+// 	defer ds.End()
 //
 type DatastoreSegment struct {
 	StartTime SegmentStartTime
@@ -63,13 +64,19 @@ type ExternalSegment struct {
 }
 
 // End finishes the segment.
-func (s Segment) End() error { return endSegment(s) }
+func (s *Segment) End() error { return endSegment(s) }
 
 // End finishes the datastore segment.
-func (s DatastoreSegment) End() error { return endDatastore(s) }
+func (s *DatastoreSegment) End() error { return endDatastore(s) }
 
 // End finishes the external segment.
-func (s ExternalSegment) End() error { return endExternal(s) }
+func (s *ExternalSegment) End() error { return endExternal(s) }
+
+// OutboundHeaders returns the headers that should be attached to the external
+// request.
+func (s *ExternalSegment) OutboundHeaders() http.Header {
+	return outboundHeaders(s)
+}
 
 // StartSegmentNow helps avoid Transaction nil checks.
 func StartSegmentNow(txn Transaction) SegmentStartTime {
@@ -93,8 +100,8 @@ func StartSegmentNow(txn Transaction) SegmentStartTime {
 //	// ... code you want to time here ...
 //	segment.End()
 //
-func StartSegment(txn Transaction, name string) Segment {
-	return Segment{
+func StartSegment(txn Transaction, name string) *Segment {
+	return &Segment{
 		StartTime: StartSegmentNow(txn),
 		Name:      name,
 	}
@@ -107,9 +114,17 @@ func StartSegment(txn Transaction, name string) Segment {
 //    segment.Response = resp
 //    segment.End()
 //
-func StartExternalSegment(txn Transaction, request *http.Request) ExternalSegment {
-	return ExternalSegment{
+func StartExternalSegment(txn Transaction, request *http.Request) *ExternalSegment {
+	s := &ExternalSegment{
 		StartTime: StartSegmentNow(txn),
 		Request:   request,
 	}
+
+	for key, values := range s.OutboundHeaders() {
+		for _, value := range values {
+			request.Header.Add(key, value)
+		}
+	}
+
+	return s
 }

@@ -23,7 +23,6 @@ type Configuration struct {
 	Timeout         time.Duration
 	Logger          Logger
 	Backend         Backend
-	MetricsInterval time.Duration
 }
 
 func (c1 *Configuration) update(c2 *Configuration) *Configuration {
@@ -51,9 +50,6 @@ func (c1 *Configuration) update(c2 *Configuration) *Configuration {
 	if c2.Backend != nil {
 		c1.Backend = c2.Backend
 	}
-	if c2.MetricsInterval > 0 {
-		c1.MetricsInterval = c2.MetricsInterval
-	}
 	return c1
 }
 
@@ -66,7 +62,6 @@ func newConfig(c Configuration) *Configuration {
 		Endpoint:        getEnv("HONEYBADGER_ENDPOINT", "https://api.honeybadger.io"),
 		Timeout:         getTimeout(),
 		Logger:          log.New(os.Stderr, "[honeybadger] ", log.Flags()),
-		MetricsInterval: 60 * time.Second,
 	}
 	config.update(&c)
 

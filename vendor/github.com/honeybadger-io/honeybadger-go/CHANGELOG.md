@@ -5,6 +5,18 @@ adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased][unreleased]
 
+## [0.4.0] - 2018-07-18
+### Added
+- Ability to tag errors. -@izumin5210
+
+## [0.3.0] - 2018-07-03
+### Changed
+- Remove deprecated metrics methods.
+
+### Fixed
+- Fixed concurrent map writes bug when calling `honeybadger.SetContext` from
+  concurrent goroutines.
+
 ## [0.2.1] - 2017-09-14
 ### Fixed
 - Previously, if you put `honeybadger.Monitor()` in your main func, the app

@@ -45,10 +45,11 @@ func TxnErrorFromResponseCode(now time.Time, code int) ErrorData {
 
 // ErrorData contains the information about a recorded error.
 type ErrorData struct {
-	When  time.Time
-	Stack StackTrace
-	Msg   string
-	Klass string
+	When            time.Time
+	Stack           StackTrace
+	ExtraAttributes map[string]interface{}
+	Msg             string
+	Klass           string
 }
 
 // TxnError combines error data with information about a transaction.  TxnError is used for
@@ -97,11 +98,11 @@ func (h *tracedError) WriteJSON(buf *bytes.Buffer) {
 	buf.WriteByte(',')
 	buf.WriteString(`"userAttributes"`)
 	buf.WriteByte(':')
-	userAttributesJSON(h.Attrs, buf, destError)
+	userAttributesJSON(h.Attrs, buf, destError, h.ErrorData.ExtraAttributes)
 	buf.WriteByte(',')
 	buf.WriteString(`"intrinsics"`)
 	buf.WriteByte(':')
-	buf.WriteString("{}")
+	intrinsicsJSON(&h.TxnEvent, buf)
 	if nil != h.Stack {
 		buf.WriteByte(',')
 		buf.WriteString(`"stack_trace"`)
@@ -167,3 +168,7 @@ func (errors harvestErrors) Data(agentRunID string, harvestStart time.Time) ([]b
 }
 
 func (errors harvestErrors) MergeIntoHarvest(h *Harvest) {}
+
+func (errors harvestErrors) EndpointMethod() string {
+	return cmdErrorData
+}

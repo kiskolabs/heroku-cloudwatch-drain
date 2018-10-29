@@ -3,6 +3,8 @@ package internal
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -62,6 +64,18 @@ func CompactJSONString(js string) string {
 	return string(out)
 }
 
+// GetContentLengthFromHeader gets the content length from a HTTP header, or -1
+// if no content length is available.
+func GetContentLengthFromHeader(h http.Header) int64 {
+	if cl := h.Get("Content-Length"); cl != "" {
+		if contentLength, err := strconv.ParseInt(cl, 10, 64); err == nil {
+			return contentLength
+		}
+	}
+
+	return -1
+}
+
 // StringLengthByteLimit truncates strings using a byte-limit boundary and
 // avoids terminating in the middle of a multibyte character.
 func StringLengthByteLimit(str string, byteLimit int) string {
@@ -77,4 +91,17 @@ func StringLengthByteLimit(str string, byteLimit int) string {
 		limitIndex = pos
 	}
 	return str[0:limitIndex]
+}
+
+func timeFromUnixMilliseconds(millis uint64) time.Time {
+	secs := int64(millis) / 1000
+	msecsRemaining := int64(millis) % 1000
+	nsecsRemaining := msecsRemaining * (1000 * 1000)
+	return time.Unix(secs, nsecsRemaining)
+}
+
+// TimeToUnixMilliseconds converts a time into a Unix timestamp in millisecond
+// units.
+func TimeToUnixMilliseconds(tm time.Time) uint64 {
+	return uint64(tm.UnixNano()) / uint64(1000*1000)
 }

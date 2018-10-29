@@ -19,11 +19,8 @@ func vetQueryParameters(params map[string]interface{}) queryParameters {
 	// from the customer.
 	vetted := make(map[string]interface{})
 	for key, val := range params {
-		if err := validAttributeKey(key); nil != err {
-			continue
-		}
-		val = truncateStringValueIfLongInterface(val)
-		if err := valueIsValid(val); nil != err {
+		val, err := ValidateUserAttribute(key, val)
+		if nil != err {
 			continue
 		}
 		vetted[key] = val
@@ -55,10 +52,7 @@ type slowQueryInstance struct {
 	DatabaseName       string
 	StackTrace         StackTrace
 
-	// Fields populated when merging into the harvest:
-
-	TxnName string
-	TxnURL  string
+	TxnEvent
 }
 
 // Aggregation is performed to avoid reporting multiple slow queries with same
@@ -109,11 +103,10 @@ func newSlowQueries(max int) *slowQueries {
 }
 
 // Merge is used to merge slow queries from the transaction into the harvest.
-func (slows *slowQueries) Merge(other *slowQueries, txnName, txnURL string) {
+func (slows *slowQueries) Merge(other *slowQueries, txnEvent TxnEvent) {
 	for _, s := range other.priorityQueue {
 		cp := *s
-		cp.TxnName = txnName
-		cp.TxnURL = txnURL
+		cp.TxnEvent = txnEvent
 		slows.observe(cp)
 	}
 }
@@ -182,9 +175,9 @@ func makeSlowQueryID(query string) uint32 {
 
 func (slow *slowQuery) WriteJSON(buf *bytes.Buffer) {
 	buf.WriteByte('[')
-	jsonx.AppendString(buf, slow.TxnName)
+	jsonx.AppendString(buf, slow.TxnEvent.FinalName)
 	buf.WriteByte(',')
-	jsonx.AppendString(buf, slow.TxnURL)
+	jsonx.AppendString(buf, slow.TxnEvent.CleanURL)
 	buf.WriteByte(',')
 	jsonx.AppendInt(buf, int64(makeSlowQueryID(slow.ParameterizedQuery)))
 	buf.WriteByte(',')
@@ -217,6 +210,9 @@ func (slow *slowQuery) WriteJSON(buf *bytes.Buffer) {
 	if nil != slow.QueryParameters {
 		w.writerField("query_parameters", slow.QueryParameters)
 	}
+
+	sharedBetterCATIntrinsics(&slow.TxnEvent, &w)
+
 	buf.WriteByte('}')
 	buf.WriteByte(']')
 }
@@ -251,4 +247,8 @@ func (slows *slowQueries) Data(agentRunID string, harvestStart time.Time) ([]byt
 }
 
 func (slows *slowQueries) MergeIntoHarvest(newHarvest *Harvest) {
+}
+
+func (slows *slowQueries) EndpointMethod() string {
+	return cmdSlowSQLs
 }

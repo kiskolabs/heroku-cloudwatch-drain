@@ -24,22 +24,30 @@ const (
 	// MaxTxnErrors is the maximum number of errors captured per
 	// transaction.
 	MaxTxnErrors      = 5
-	maxTxnTraceNodes  = 256
 	maxTxnSlowQueries = 10
 
+	startingTxnTraceNodes = 16
+	maxTxnTraceNodes      = 256
+
 	// harvest data
-	maxMetrics         = 2 * 1000
-	maxCustomEvents    = 10 * 1000
-	maxTxnEvents       = 10 * 1000
-	maxErrorEvents     = 100
-	maxHarvestErrors   = 20
-	maxHarvestSlowSQLs = 10
+	maxMetrics          = 2 * 1000
+	maxCustomEvents     = 10 * 1000
+	maxTxnEvents        = 10 * 1000
+	maxRegularTraces    = 1
+	maxSyntheticsTraces = 20
+	maxErrorEvents      = 100
+	maxHarvestErrors    = 20
+	maxHarvestSlowSQLs  = 10
+	maxSpanEvents       = 1000
 
 	// attributes
 	attributeKeyLengthLimit   = 255
 	attributeValueLengthLimit = 255
 	attributeUserLimit        = 64
-	attributeAgentLimit       = 255 - attributeUserLimit
+	// AttributeErrorLimit limits the number of extra attributes that can be
+	// provided when noticing an error.
+	AttributeErrorLimit       = 32
+	attributeAgentLimit       = 255 - (attributeUserLimit + AttributeErrorLimit)
 	customEventAttributeLimit = 64
 
 	// Limits affecting Config validation are found in the config package.
