@@ -62,7 +62,17 @@ func (p *logParser) parse() (*LogEntry, error) {
 		return nil, fmt.Errorf("failed to skip to MSG: %s", err)
 	}
 
-	message := app + "[" + process + "]: " + string(p.b[p.cursor:])
+	var endOfLog = len(p.b)
+	if string(p.b[len(p.b)-1:]) == "\n" {
+		endOfLog -= 1
+	}
+	var logMetaData = "\"heroku_app\":\"" + app + "\",\"heroku_process\":\"" + process + "\","
+	var message string
+	if app == "heroku" {
+		message = "{" + logMetaData + "\"message\":\"" + string(p.b[p.cursor:endOfLog]) + "\"}"
+	} else {
+		message = "{" + logMetaData + string(p.b[p.cursor:endOfLog])[1:]
+	}
 
 	return &LogEntry{
 		Time:    t,

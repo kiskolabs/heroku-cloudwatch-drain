@@ -1,3 +1,6 @@
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package internal
 
 import (
@@ -129,7 +132,7 @@ func (r *metricRule) apply(s string) (ruleResult, string) {
 		}
 		return ruleUnmatched, s
 	} else if r.EachSegment {
-		segments := strings.Split(string(s), "/")
+		segments := strings.Split(s, "/")
 		applied := make([]string, len(segments))
 		result := ruleUnmatched
 		for i, segment := range segments {

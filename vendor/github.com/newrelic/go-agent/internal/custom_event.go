@@ -1,3 +1,6 @@
+// Copyright 2020 New Relic Corporation. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
 package internal
 
 import (
@@ -83,13 +86,8 @@ func CreateCustomEvent(eventType string, params map[string]interface{}, now time
 
 	truncatedParams := make(map[string]interface{})
 	for key, val := range params {
-		if err := validAttributeKey(key); nil != err {
-			return nil, err
-		}
-
-		val = truncateStringValueIfLongInterface(val)
-
-		if err := valueIsValid(val); nil != err {
+		val, err := ValidateUserAttribute(key, val)
+		if nil != err {
 			return nil, err
 		}
 		truncatedParams[key] = val

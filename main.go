@@ -222,9 +222,6 @@ func (app *App) processMessages(r io.Reader, l logger, txn newrelic.Transaction)
 		if app.stripAnsiCodes {
 			m = stripAnsi(m)
 		}
-		if !eof {
-			m = m[:len(m)-1]
-		}
 		l.Log(entry.Time, m)
 		if eof {
 			break

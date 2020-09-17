@@ -72,7 +72,7 @@ func TestSingleLogEntry(t *testing.T) {
 	r, err := http.Post(server.URL+"/app", "", body)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusAccepted, r.StatusCode)
-	assert.Equal(t, "heroku[web.1]: State changed from up to down", l.m)
+	assert.Equal(t, "{\"heroku_app\":\"heroku\",\"heroku_process\":\"web.1\",\"message\":\"State changed from up to down\"}", l.m)
 }
 
 func TestLogEntryWithEmptyLineAtTheEnd(t *testing.T) {
@@ -85,7 +85,7 @@ func TestLogEntryWithEmptyLineAtTheEnd(t *testing.T) {
 	r, err := http.Post(server.URL+"/app", "", body)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusAccepted, r.StatusCode)
-	assert.Equal(t, "heroku[web.1]: State changed from up to down", l.m)
+	assert.Equal(t, "{\"heroku_app\":\"heroku\",\"heroku_process\":\"web.1\",\"message\":\"State changed from up to down\"}", l.m)
 }
 
 func TestAnsiCodeStripping(t *testing.T) {
@@ -100,7 +100,7 @@ func TestAnsiCodeStripping(t *testing.T) {
 	r, err := http.Post(server.URL+"/app", "", body)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusAccepted, r.StatusCode)
-	assert.Equal(t, "heroku[web.1]: (0.1ms) BEGIN", l.m)
+	assert.Equal(t, "{\"heroku_app\":\"heroku\",\"heroku_process\":\"web.1\",\"message\":\"(0.1ms) BEGIN\"}", l.m)
 }
 
 type LastMessageLogger struct {
